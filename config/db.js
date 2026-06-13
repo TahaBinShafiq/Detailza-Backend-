@@ -1,17 +1,21 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            // Yeh options connection ko stable rakhte hain aur timeout nahi hone dete
-            serverSelectionTimeoutMS: 5000, 
-            socketTimeoutMS: 45000,
-        });
-        console.log("✅ MongoDB Connected Successfully!");
-    } catch (error) {
-        console.log(error);
-        // Server ko crash hone se bachane ke liye process.exit(1) ko temporary hata do
-    }
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URI).then((m) => m);
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
 };
 
 module.exports = connectDB;
+

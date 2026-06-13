@@ -1,13 +1,12 @@
 const Booking = require('../models/booking');
+const connectDB = require('../config/db');
 
-// @desc    Create new booking
-// @route   POST /api/bookings
-// @access  Public
 const createBooking = async (req, res) => {
   try {
+    await connectDB();
+
     const bookingData = req.body;
 
-    // Database me naya document create ho raha hai
     const newBooking = new Booking(bookingData);
     const savedBooking = await newBooking.save();
 
@@ -16,8 +15,9 @@ const createBooking = async (req, res) => {
       message: 'Booking successfully created!',
       data: savedBooking
     });
+
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: 'Booking failed to create',
       error: error.message
