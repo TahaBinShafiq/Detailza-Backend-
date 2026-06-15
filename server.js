@@ -6,10 +6,20 @@ const bookingRoutes = require('./routes/bookingRoutes');
 
 dotenv.config();
 
-connectDB();
-
 const app = express();
 
+// DB (cached)
+let isConnected = false;
+
+const connectDatabase = async (req, res, next) => {
+    if (!isConnected) {
+        await connectDB();
+        isConnected = true;
+    }
+    next();
+};
+
+// CORS
 app.use(cors({
     origin: [
         "https://detailza-car-detailing.vercel.app",
@@ -19,14 +29,23 @@ app.use(cors({
     credentials: true
 }));
 
-// Middlewares
 app.use(express.json());
+app.use(connectDatabase);
 
 // Routes
 app.use('/api/bookings', bookingRoutes);
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.get("/", (req, res) => {
+    res.json({ success: true, message: "API running on Vercel" });
 });
+
+// ❌ NO app.listen here
+
+if (process.env.NODE_ENV !== "production") {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
