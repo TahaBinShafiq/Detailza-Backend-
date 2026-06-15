@@ -17,7 +17,7 @@ app.use(
             'https://detailza-car-detailing.vercel.app',
             'http://localhost:3000',
         ],
-        methods: ['POST'],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         credentials: true,
     })
 );
