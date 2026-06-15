@@ -10,17 +10,14 @@ connectDB();
 
 const app = express();
 
-// CORS Policy
-app.use(
-    cors({
-        origin: [
-            'https://detailza-car-detailing.vercel.app',
-            'http://localhost:3000',
-        ],
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        credentials: true,
-    })
-);
+app.use(cors({
+    origin: [
+        "https://detailza-car-detailing.vercel.app",
+        "http://localhost:3000"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
+}));
 
 // Middlewares
 app.use(express.json());
