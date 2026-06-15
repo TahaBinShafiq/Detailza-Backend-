@@ -14,7 +14,7 @@ const app = express();
 app.use(
     cors({
         origin: [
-            'https://detailza-backend.vercel.app',
+            'https://detailza-car-detailing.vercel.app',
             'http://localhost:3000',
         ],
         methods: ['POST'],
