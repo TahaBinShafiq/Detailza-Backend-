@@ -12,22 +12,36 @@ const app = express();
 let isConnected = false;
 
 const connectDatabase = async (req, res, next) => {
-    if (!isConnected) {
-        await connectDB();
-        isConnected = true;
+    // Agar OPTIONS request hai to DB connect karne ki zaroorat nahi hai
+    if (req.method === 'OPTIONS') {
+        return next();
     }
-    next();
+
+    try {
+        if (!isConnected) {
+            await connectDB();
+            isConnected = true;
+        }
+        next();
+    } catch (error) {
+        console.error("Database connection error:", error);
+        res.status(500).json({ error: "Database connection failed" });
+    }
 };
 
-// CORS
+// 1. CORS Configuration (Sab se upar hona chahiye)
 app.use(cors({
     origin: [
         "https://detailza-car-detailing.vercel.app",
         "http://localhost:3000"
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"] // Headers explicitly allow karein
 }));
+
+// 2. Preflight Requests ko foran handle karein
+app.options('*', cors());
 
 app.use(express.json());
 app.use(connectDatabase);
@@ -38,8 +52,6 @@ app.use('/api/bookings', bookingRoutes);
 app.get("/", (req, res) => {
     res.json({ success: true, message: "API running on Vercel" });
 });
-
-// ❌ NO app.listen here
 
 if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 5000;
