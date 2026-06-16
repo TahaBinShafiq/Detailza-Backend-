@@ -4,40 +4,38 @@ const axios = require('axios');
 
 const createBooking = async (req, res) => {
   try {
-    // DB connection
     await connectDB();
 
     const bookingData = req.body;
-
-    // Save booking
     const savedBooking = await Booking.create(bookingData);
+    if (process.env.SLACK_WEBHOOK_URL) {
+      try {
+        const slackMessage = `🚨 *New Booking Received!* 🚨\n\n` +
+          `*Name:* ${savedBooking.fullName}\n` +
+          `*Date:* ${savedBooking.bookingDate}\n` +
+          `*Time:* ${savedBooking.timeSlot}\n` +
+          `*Phone:* ${savedBooking.phone}\n` +
+          `*Address:* ${savedBooking.address}, ZIP: ${savedBooking.zipCode}\n` +
+          `*Email:* ${savedBooking.email || "N/A"}\n` +
+          `*Vehicle:* ${savedBooking.vehicleType} (${savedBooking.carModel})\n` +
+          `*Package:* ${savedBooking.packageName}\n` +
+          `*Extra Services:* ${savedBooking.extraServices?.length ? savedBooking.extraServices.join(", ") : "None"}\n` +
+          `*Base Price:* $${savedBooking.basePrice}\n` +
+          `*Total Bill:* $${savedBooking.totalBill}\n` +
+          `*Site Setup:* ${savedBooking.siteSetup}\n` +
+          `*Note:* ${savedBooking.notes || "No notes provided"}`;
 
-    // Slack notification (non-blocking safe way)
-    try {
-      await axios.post(process.env.SLACK_WEBHOOK_URL, {
-        text: `
-        Name: ${savedBooking.fullName}
-        Date: ${savedBooking.bookingDate}
-        Time: ${savedBooking.timeSlot}
-        Phone: ${savedBooking.phone}
-        Address: ${savedBooking.address}
-        ZIP: ${savedBooking.zipCode}
-        Email: ${savedBooking.email || "N/A"}
-        Type: ${savedBooking.vehicleType}
-        Model: ${savedBooking.carModel}
-        Package: ${savedBooking.packageName}
-        Extra Services: ${savedBooking.extraServices?.length
-            ? savedBooking.extraServices.join(", ")
-            : "None"
-          }
-        Base Price: $${savedBooking.basePrice}
-        otal Bill: $${savedBooking.totalBill}
-        Site Setup: ${savedBooking.siteSetup}
-        Note: ${savedBooking.notes || "No notes provided"}
-        `,
-      });
-    } catch (slackError) {
-      console.error("Slack notification failed:", slackError.message);
+        await axios.post(process.env.SLACK_WEBHOOK_URL, {
+          text: slackMessage
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        console.log("Slack notification sent successfully!");
+      } catch (slackError) {
+        console.error("Slack notification failed:", slackError.response?.data || slackError.message);
+      }
+    } else {
+      console.warn("Slack Webhook URL missing in Env variables!");
     }
 
     // Response

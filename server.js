@@ -14,7 +14,6 @@ const allowedOrigins = [
     "http://localhost:3000"
 ];
 
-// 2. CORS Middleware Configuration
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -28,8 +27,6 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Accept"]
 }));
 
-// 3. Preflight (OPTIONS) Requests Bypass (Fixed for Express v5+)
-// Har kisam ki OPTIONS request ko handle karne ka sabse behtareen aur safe tareeqa
 app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
@@ -53,7 +50,7 @@ const connectDatabase = async (req, res, next) => {
         console.log("MongoDB Connected Successfully!");
         next();
     } catch (error) {
-        console.error("❌ DB Connection Failed:", error.message);
+        console.error("DB Connection Failed:", error.message);
         return res.status(500).json({
             success: false,
             message: "Database connection failed",
@@ -64,7 +61,7 @@ const connectDatabase = async (req, res, next) => {
 
 app.use(connectDatabase);
 
-// 6. Routes
+
 app.use('/api/bookings', bookingRoutes);
 
 app.get("/", (req, res) => {
