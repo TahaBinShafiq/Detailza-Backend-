@@ -6,6 +6,9 @@ const createBooking = async (req, res) => {
   try {
     await connectDB();
 
+    console.log("ORIGIN:", req.headers.origin);
+    console.log("USER:", req.body.email);
+
     const bookingData = req.body;
     const savedBooking = await Booking.create(bookingData);
     if (process.env.SLACK_WEBHOOK_URL) {
