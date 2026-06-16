@@ -8,51 +8,69 @@ dotenv.config();
 
 const app = express();
 
-// DB (cached)
-let isConnected = false;
+// 1. Allowed Origins List
+const allowedOrigins = [
+    "https://detailza-car-detailing.vercel.app",
+    "http://localhost:3000"
+];
 
+// 2. CORS Middleware Configuration
+app.use(cors({
+    origin: function (origin, callback) {
+        // local requests ya bina origin (jaise Postman) ko allow karne ke liye
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"]
+}));
+
+// 3. Preflight (OPTIONS) Requests ko foran bypass karein
+app.options('*', (req, res) => {
+    res.sendStatus(200);
+});
+
+// 4. Body Parser
+app.use(express.json());
+
+// 5. Safe Database Connection Middleware (With Try/Catch)
+let isConnected = false;
 const connectDatabase = async (req, res, next) => {
-    // Agar OPTIONS request hai to DB connect karne ki zaroorat nahi hai
-    if (req.method === 'OPTIONS') {
+    if (isConnected) {
         return next();
     }
-
     try {
-        if (!isConnected) {
-            await connectDB();
-            isConnected = true;
-        }
+        console.log("Connecting to MongoDB...");
+        await connectDB();
+        isConnected = true;
+        console.log("MongoDB Connected Successfully!");
         next();
     } catch (error) {
-        console.error("Database connection error:", error);
-        res.status(500).json({ error: "Database connection failed" });
+        console.error("❌ DB Connection Failed:", error.message);
+        // Server crash karne ke bajaye response bhejrein taake 500 error handle ho sky
+        return res.status(500).json({ 
+            success: false, 
+            message: "Database connection failed", 
+            error: error.message 
+        });
     }
 };
 
-// 1. CORS Configuration (Sab se upar hona chahiye)
-app.use(cors({
-    origin: [
-        "https://detailza-car-detailing.vercel.app",
-        "http://localhost:3000"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"] // Headers explicitly allow karein
-}));
-
-// 2. Preflight Requests ko foran handle karein
-app.options('*', cors());
-
-app.use(express.json());
+// Database middleware apply karein
 app.use(connectDatabase);
 
-// Routes
+// 6. Routes
 app.use('/api/bookings', bookingRoutes);
 
 app.get("/", (req, res) => {
     res.json({ success: true, message: "API running on Vercel" });
 });
 
+// Local environment ke liye listen (Vercel isko ignore karega)
 if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
