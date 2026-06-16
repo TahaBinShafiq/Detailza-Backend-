@@ -17,7 +17,6 @@ const allowedOrigins = [
 // 2. CORS Middleware Configuration
 app.use(cors({
     origin: function (origin, callback) {
-        // local requests ya bina origin (jaise Postman) ko allow karne ke liye
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
@@ -29,15 +28,19 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Accept"]
 }));
 
-// 3. Preflight (OPTIONS) Requests ko foran bypass karein
-app.options('*', (req, res) => {
-    res.sendStatus(200);
+// 3. Preflight (OPTIONS) Requests Bypass (Fixed for Express v5+)
+// Har kisam ki OPTIONS request ko handle karne ka sabse behtareen aur safe tareeqa
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
 });
 
 // 4. Body Parser
 app.use(express.json());
 
-// 5. Safe Database Connection Middleware (With Try/Catch)
+// 5. Safe Database Connection Middleware
 let isConnected = false;
 const connectDatabase = async (req, res, next) => {
     if (isConnected) {
@@ -51,16 +54,14 @@ const connectDatabase = async (req, res, next) => {
         next();
     } catch (error) {
         console.error("❌ DB Connection Failed:", error.message);
-        // Server crash karne ke bajaye response bhejrein taake 500 error handle ho sky
-        return res.status(500).json({ 
-            success: false, 
-            message: "Database connection failed", 
-            error: error.message 
+        return res.status(500).json({
+            success: false,
+            message: "Database connection failed",
+            error: error.message
         });
     }
 };
 
-// Database middleware apply karein
 app.use(connectDatabase);
 
 // 6. Routes
@@ -70,7 +71,6 @@ app.get("/", (req, res) => {
     res.json({ success: true, message: "API running on Vercel" });
 });
 
-// Local environment ke liye listen (Vercel isko ignore karega)
 if (process.env.NODE_ENV !== "production") {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
