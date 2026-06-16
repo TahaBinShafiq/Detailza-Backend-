@@ -10,8 +10,9 @@ const app = express();
 
 // 1. Allowed Origins List
 const allowedOrigins = [
-    "https://detailza-car-detailing.vercel.app",
-    "http://localhost:3000"
+    "https://detailza.com",
+    "https://www.detailza.com",
+    "http://localhost:3000",
 ];
 
 app.use(cors({
